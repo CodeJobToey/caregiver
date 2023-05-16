@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:caregiver/algorithm/data_firebase.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -48,6 +49,8 @@ class _HomeState extends State<Home> {
           zoom: _zoom,
         ),
         onMapCreated: (controller) {
+          print(controller);
+
           setState(() {
             _mapController = controller;
           });
@@ -68,9 +71,26 @@ class _HomeState extends State<Home> {
     patientLat = getDataPatient.patientLatitude;
     patientLon = getDataPatient.patientLongitude;
 
-    _currentPatient = LatLng(patientLat, patientLon);
+    Location location = Location();
+    bool serviceEnabled;
+
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        setState(() {
+          _currentPatient = const LatLng(0, 0);
+        });
+        return;
+      }
+    }
 
     try {
+      print(_mapController);
+      setState(() {
+        _currentPatient = LatLng(patientLat, patientLon);
+      });
+
       if (_mapController != null) {
         _mapController!.animateCamera(
           CameraUpdate.newLatLng(_currentPatient),
