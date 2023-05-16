@@ -68,10 +68,6 @@ class _HomeState extends State<Home> {
     patientLat = getDataPatient.patientLatitude;
     patientLon = getDataPatient.patientLongitude;
 
-    print('_getDataPatient');
-    print('patientLat : $patientLat');
-    print('patientLon : $patientLon');
-
     _currentPatient = LatLng(patientLat, patientLon);
 
     try {
