@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "190038800057",
+    "project_id": "pkw40304",
+    "storage_bucket": "pkw40304.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:190038800057:android:b88cc2163efc1521570d68",
+        "android_client_info": {
+          "package_name": "com.example.caregiver"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "190038800057-m5l84848aup5dvrgtjkh46mhap9t40b5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWvtO-RO8AKaLaAFFzL2wOAZRvz3vF8DE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "190038800057-m5l84848aup5dvrgtjkh46mhap9t40b5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
