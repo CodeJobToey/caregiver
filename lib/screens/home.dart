@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:caregiver/algorithm/calculate.dart';
 import 'package:caregiver/algorithm/data_firebase.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -12,15 +15,22 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  GoogleMapController? _mapController;
   final double _zoom = 16.0;
-  final Set<Circle> _circles = {}; // Set to store circles on the map
+  final Set<Circle> _circles = {};
+  GoogleMapController? _mapController;
+  BitmapDescriptor PatientMarker =
+      BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
 
   var getDataHome = DataFirebase();
   var getDataPatient = DataFirebase();
+  var getCalculate = Calculate();
 
   double patientLat = 0.0;
   double patientLon = 0.0;
+  double radius = 0.0;
+  double homeLat = 0.0;
+  double homeLon = 0.0;
+  double distance = 0.0;
 
   LatLng _currentPatient = const LatLng(0, 0);
 
@@ -31,7 +41,12 @@ class _HomeState extends State<Home> {
         title: const Text('Caregiver'),
         centerTitle: true,
         actions: <Widget>[
-          IconButton(onPressed: () {}, icon: const Icon(Icons.add_location_alt))
+          IconButton(
+            onPressed: () {
+              _showSetRadius();
+            },
+            icon: const Icon(Icons.add_location_alt),
+          )
         ],
       ),
       body: StreamBuilder(
@@ -42,6 +57,7 @@ class _HomeState extends State<Home> {
           patientLon = snapshot.data!['longitude'];
 
           _currentPatient = LatLng(patientLat, patientLon);
+
           return GoogleMap(
             mapType: MapType.normal,
             initialCameraPosition: CameraPosition(
@@ -57,12 +73,146 @@ class _HomeState extends State<Home> {
               Marker(
                 markerId: const MarkerId('currentLocation'),
                 position: _currentPatient,
+                icon: PatientMarker,
               ),
             },
-            circles: _circles,
+            circles: Set.from(_circles),
           );
         },
       ),
     );
+  }
+
+  Future<void> _createCircle() async {
+    await getDataHome.home();
+    homeLat = getDataHome.homeLatitude;
+    homeLon = getDataHome.homeLongitude;
+    radius = getDataHome.radius;
+
+    await getCalculate.distance();
+    distance = getCalculate.distanceRadius;
+
+    if (distance <= radius) {
+      circlesBlue();
+    } else {
+      _showOutArea();
+      circlesRed();
+    }
+  }
+
+  void _showSetRadius() {
+    double _lat = 0.0;
+    double _lon = 0.0;
+    double _r = 0.0;
+    final currentContext = context;
+    showDialog(
+      context: currentContext,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Set Radius'),
+          content: Column(
+            children: [
+              TextField(
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Home latitude',
+                ),
+                onChanged: (value) {
+                  _lat = double.parse(value);
+                },
+              ),
+              TextField(
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Home longitude',
+                ),
+                onChanged: (value) {
+                  _lon = double.parse(value);
+                },
+              ),
+              TextField(
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Radius',
+                ),
+                onChanged: (value) {
+                  _r = double.parse(value);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (_lat != 0.0 || _lon != 0.0) {
+                  getDataHome.saveHomeLocation(_lat, _lon, _r);
+                } else {
+                  getDataHome.saveHomeLocation(homeLat, homeLon, _r);
+                }
+                _createCircle();
+                Navigator.of(currentContext).pop();
+              },
+              child: const Text('OK'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(currentContext).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showOutArea() {
+    final currentContext = context;
+    showDialog(
+      context: currentContext,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('The patient is out of area'),
+          content: const Text('Please find the patient Immedietly.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(currentContext).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void circlesRed() {
+    return setState(() {
+      _circles.add(
+        Circle(
+          center: LatLng(homeLat, homeLon),
+          radius: radius,
+          circleId: const CircleId('HomeLocation'),
+          strokeColor: Colors.red,
+          fillColor: Colors.red.withOpacity(0.2),
+        ),
+      );
+    });
+  }
+
+  void circlesBlue() {
+    return setState(() {
+      _circles.add(
+        Circle(
+          circleId: const CircleId('HomeLocation'),
+          center: LatLng(homeLat, homeLon),
+          radius: radius,
+          strokeWidth: 2,
+          strokeColor: Colors.blue,
+          fillColor: Colors.blue.withOpacity(0.2),
+        ),
+      );
+    });
   }
 }
