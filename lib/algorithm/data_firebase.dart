@@ -13,6 +13,7 @@ class DataFirebase extends ChangeNotifier {
   double patientLongitude = 0.0;
 
   Future<void> patient() async {
+    // ภาพรวมของเอกสาร
     final documentSnapshot = await documentPatient.get();
     final patientData = documentSnapshot.data();
     patientLatitude = double.parse(patientData!['latitude'].toString());
@@ -46,6 +47,4 @@ class DataFirebase extends ChangeNotifier {
       print('Error save home location:   $error');
     });
   }
-
-  //notifyListeners();
 }

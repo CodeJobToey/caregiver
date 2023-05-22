@@ -23,18 +23,20 @@ class Calculate extends ChangeNotifier {
     homeLon = getData.homeLongitude;
     radius = getData.radius;
 
+    // การคำนวณด้วย กฎของเฮเวอร์ซีน (Haversine formula)
+    // คำนวณระยะทางระหว่างจุดสองจุดโดยใช้สูตร Haversine
+
     const earthRadius = 6370000; // รัศมีโลกมีค่าประมาณ 6.37*10^6
     const p = pi / 180; // แปลงค่าคงที่ให้เป็นองศาเรเดียน
 
     var disLat = (homeLat - patientLat) * p;
     var disLon = (homeLon - patientLon) * p;
 
-    // คำนวณระยะทางระหว่างจุดสองจุดโดยใช้สูตร Haversine
     var a = (sin(disLat / 2) * sin(disLat / 2)) +
         cos(homeLat * p) *
             cos(patientLat * p) *
             (sin(disLon / 2) * sin(disLon / 2));
-    var c = 2 * atan(sqrt(a));
+    var c = 2 * asin(sqrt(a));
     distanceRadius = earthRadius * c;
 
     notifyListeners();
