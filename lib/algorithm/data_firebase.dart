@@ -13,13 +13,11 @@ class DataFirebase extends ChangeNotifier {
   double patientLongitude = 0.0;
 
   Future<void> patient() async {
-    // ภาพรวมของเอกสาร
     final documentSnapshot = await documentPatient.get();
     final patientData = documentSnapshot.data();
     patientLatitude = double.parse(patientData!['latitude'].toString());
     patientLongitude = double.parse(patientData['longitude'].toString());
 
-    // อัพค่าตัวแปร
     notifyListeners();
   }
 
@@ -30,10 +28,7 @@ class DataFirebase extends ChangeNotifier {
     homeLongitude = double.parse(homeData['longitude'].toString());
     radius = double.parse(homeData['radius'].toString());
 
-    // อัพค่าตัวแปร
     notifyListeners();
-
-    // return {'currentHome': _currentHome, 'radiusLongitude': radiusLongitude};
   }
 
   void saveHomeLocation(double lat, double lon, double radius) async {

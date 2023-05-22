@@ -31,51 +31,56 @@ class _HomeState extends State<Home> {
   double distance = 0.0;
 
   LatLng _currentPatient = const LatLng(0, 0);
+  LatLng _currentHome = const LatLng(0, 0);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Caregiver'),
-          centerTitle: true,
-          actions: <Widget>[
-            IconButton(
-              onPressed: () {
-                _showSetRadius();
-              },
-              icon: const Icon(Icons.add_location_alt),
-            )
-          ],
-        ),
-        body: StreamBuilder(
-            stream: firestore.collection('patient').doc('LatLng').snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) return const Text('Loading...');
-              patientLat = snapshot.data!['latitude'];
-              patientLon = snapshot.data!['longitude'];
+      appBar: AppBar(
+        title: const Text('Caregiver'),
+        centerTitle: true,
+        actions: <Widget>[
+          IconButton(
+            onPressed: () {
+              _showSetRadius();
+            },
+            icon: const Icon(Icons.add_location_alt),
+          )
+        ],
+      ),
+      body: StreamBuilder(
+        stream: firestore.collection('patient').doc('LatLng').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const Text('Loading...');
+          patientLat = snapshot.data!['latitude'];
+          patientLon = snapshot.data!['longitude'];
 
-              _currentPatient = LatLng(patientLat, patientLon);
+          _currentPatient = LatLng(patientLat, patientLon);
+          getData();
+          // _configureCircles();
 
-              return GoogleMap(
-                mapType: MapType.normal,
-                initialCameraPosition:
-                    CameraPosition(target: _currentPatient, zoom: _zoom),
-                onMapCreated: (controller) {
-                  setState(() {
-                    _mapController = controller;
-                  });
-                },
-                markers: {
-                  Marker(
-                      markerId: const MarkerId('currentLocation'),
-                      position: _currentPatient)
-                },
-                circles: Set.from(_circles),
-              );
-            }));
+          return GoogleMap(
+            mapType: MapType.normal,
+            initialCameraPosition:
+                CameraPosition(target: _currentPatient, zoom: _zoom),
+            onMapCreated: (controller) {
+              setState(() {
+                _mapController = controller;
+              });
+            },
+            markers: {
+              Marker(
+                  markerId: const MarkerId('currentLocation'),
+                  position: _currentPatient)
+            },
+            circles: Set.from(_circles),
+          );
+        },
+      ),
+    );
   }
 
-  Future<void> _createCircle() async {
+  Future<void> getData() async {
     await getDataHome.home();
     homeLat = getDataHome.homeLatitude;
     homeLon = getDataHome.homeLongitude;
@@ -84,18 +89,19 @@ class _HomeState extends State<Home> {
     await getCalculate.distance();
     distance = getCalculate.distanceRadius;
 
+    _currentHome = LatLng(homeLat, homeLon);
+    _configureCircles();
+
     if (distance <= radius) {
-      circlesBlue();
     } else {
-      circlesRed();
-      _showOutArea();
+      _showAlert();
     }
   }
 
   void _showSetRadius() {
-    double _lat = 0.0;
-    double _lon = 0.0;
-    double _r = 0.0;
+    double latitude = 0.0;
+    double longitude = 0.0;
+    double radiusCircle = 0.0;
     final currentContext = context;
     showDialog(
         context: currentContext,
@@ -109,7 +115,7 @@ class _HomeState extends State<Home> {
                     labelText: 'Home latitude',
                   ),
                   onChanged: (value) {
-                    _lat = double.parse(value);
+                    latitude = double.parse(value);
                   },
                 ),
                 TextField(
@@ -118,7 +124,7 @@ class _HomeState extends State<Home> {
                     labelText: 'Home longitude',
                   ),
                   onChanged: (value) {
-                    _lon = double.parse(value);
+                    longitude = double.parse(value);
                   },
                 ),
                 TextField(
@@ -127,19 +133,20 @@ class _HomeState extends State<Home> {
                     labelText: 'Radius',
                   ),
                   onChanged: (value) {
-                    _r = double.parse(value);
+                    radiusCircle = double.parse(value);
                   },
                 )
               ]),
               actions: [
                 TextButton(
                   onPressed: () {
-                    if (_lat != 0.0 || _lon != 0.0) {
-                      getDataHome.saveHomeLocation(_lat, _lon, _r);
+                    if (latitude != 0.0 && longitude != 0.0) {
+                      getDataHome.saveHomeLocation(
+                          latitude, longitude, radiusCircle);
                     } else {
-                      getDataHome.saveHomeLocation(homeLat, homeLon, _r);
+                      getDataHome.saveHomeLocation(
+                          homeLat, homeLon, radiusCircle);
                     }
-                    _createCircle();
                     Navigator.of(currentContext).pop();
                   },
                   child: const Text('OK'),
@@ -154,47 +161,40 @@ class _HomeState extends State<Home> {
         });
   }
 
-  void _showOutArea() {
+  void _configureCircles() {
+    Color circleColor = distance > radius ? Colors.red : Colors.blue;
+
+    _circles.clear();
+    _circles.add(
+      Circle(
+        circleId: const CircleId('HomeLocation'),
+        center: _currentHome,
+        radius: radius, // Circle radius in meters
+        fillColor: circleColor.withOpacity(0.3),
+        strokeColor: circleColor,
+        strokeWidth: 2,
+      ),
+    );
+  }
+
+  void _showAlert() {
     final currentContext = context;
     showDialog(
-        context: currentContext,
-        builder: (BuildContext context) {
-          return AlertDialog(
-              title: const Text('The patient is out of area'),
-              content: const Text('Please find the patient Immedietly.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(currentContext).pop();
-                  },
-                  child: const Text('OK'),
-                )
-              ]);
-        });
-  }
-
-  void circlesRed() {
-    return setState(() {
-      _circles.add(Circle(
-        center: LatLng(homeLat, homeLon),
-        radius: radius,
-        circleId: const CircleId('HomeLocation'),
-        strokeColor: Colors.red,
-        fillColor: Colors.red.withOpacity(0.2),
-      ));
-    });
-  }
-
-  void circlesBlue() {
-    return setState(() {
-      _circles.add(Circle(
-        circleId: const CircleId('HomeLocation'),
-        center: LatLng(homeLat, homeLon),
-        radius: radius,
-        strokeWidth: 2,
-        strokeColor: Colors.blue,
-        fillColor: Colors.blue.withOpacity(0.2),
-      ));
-    });
+      context: currentContext,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('The patient is out of area'),
+          content: const Text('Please find the patient Immedietly.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(currentContext).pop();
+              },
+              child: const Text('OK'),
+            )
+          ],
+        );
+      },
+    );
   }
 }
