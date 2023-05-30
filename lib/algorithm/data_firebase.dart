@@ -1,45 +1,95 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
-final documentPatient = firestore.collection('patient').doc('LatLng');
-final documentHome = firestore.collection('homeLocation').doc('home');
 
 class DataFirebase extends ChangeNotifier {
-  double homeLatitude = 0.0;
-  double homeLongitude = 0.0;
+  List<Map<String, dynamic>> position = [];
+  List<Map<String, dynamic>> location = [];
+  List<Map<String, dynamic>> caculate = [];
+
+  LatLng patientData = const LatLng(0, 0);
+  LatLng homeData = const LatLng(0, 0);
   double radius = 0.0;
-  double patientLatitude = 0.0;
-  double patientLongitude = 0.0;
 
-  Future<void> patient() async {
-    final documentSnapshot = await documentPatient.get();
-    final patientData = documentSnapshot.data();
-    patientLatitude = double.parse(patientData!['latitude'].toString());
-    patientLongitude = double.parse(patientData['longitude'].toString());
+  Future<void> positionCollection() async {
+    position.clear();
+    QuerySnapshot snapshot = await firestore.collection('Positions').get();
+    for (var doc in snapshot.docs) {
+      Map<String, dynamic> documentData = doc.data() as Map<String, dynamic>;
+      documentData['Document Name'] = doc.id;
 
+      position.add(documentData);
+    }
     notifyListeners();
   }
 
-  Future<void> home() async {
-    final documentSnapshot = await documentHome.get();
-    final homeData = documentSnapshot.data();
-    homeLatitude = double.parse(homeData!['latitude'].toString());
-    homeLongitude = double.parse(homeData['longitude'].toString());
-    radius = double.parse(homeData['radius'].toString());
+  Future<void> locationCollection() async {
+    location.clear();
+    QuerySnapshot snapshot = await firestore.collection('Location').get();
+    for (var doc in snapshot.docs) {
+      Map<String, dynamic> documentData = doc.data() as Map<String, dynamic>;
+      documentData['Document Name'] = doc.id;
 
+      location.add(documentData);
+      if (doc.id == 'patient') {
+        patientData = LatLng(double.parse(documentData['latitude'].toString()),
+            double.parse(documentData['longitude'].toString()));
+      } else {
+        homeData = LatLng(double.parse(documentData['latitude'].toString()),
+            double.parse(documentData['longitude'].toString()));
+        radius = double.parse(documentData['radius'].toString());
+      }
+    }
     notifyListeners();
   }
 
-  void saveHomeLocation(double lat, double lon, double radius) async {
-    var homeData = {"latitude": lat, "longitude": lon, "radius": radius};
+  Future<void> caculateCollection() async {
+    caculate.clear();
+    QuerySnapshot snapshot = await firestore.collection('Caculate').get();
+    for (var doc in snapshot.docs) {
+      Map<String, dynamic> documentData = doc.data() as Map<String, dynamic>;
+      documentData['Document Name'] = doc.id;
+
+      caculate.add(documentData);
+    }
+    notifyListeners();
+  }
+
+  void saveHomeLocation(double lat, double lon, double radius) {
+    var home = {"latitude": lat, "longitude": lon, 'radius': radius};
 
     FirebaseFirestore.instance
-        .collection('homeLocation')
+        .collection('Location')
         .doc('home')
-        .set(homeData)
+        .set(home)
         .catchError((error) {
-      print('Error save home location:   $error');
+      print('Error save home location: $error');
+    });
+  }
+
+  void savePositions(double lat, double lon, double radius, String document) {
+    var position = {'latitude': lat, 'longitude': lon, 'radius': radius};
+
+    FirebaseFirestore.instance
+        .collection('Positions')
+        .doc(document)
+        .set(position)
+        .catchError((error) {
+      print('Error save home location: $error');
+    });
+  }
+
+  void saveCaculate(String document, double distance) {
+    var cacuclatePosition = {document: distance};
+
+    FirebaseFirestore.instance
+        .collection('Positions')
+        .doc(document)
+        .set(cacuclatePosition)
+        .catchError((error) {
+      print('Error save home location: $error');
     });
   }
 }

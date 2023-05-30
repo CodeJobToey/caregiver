@@ -2,42 +2,53 @@ import 'dart:math';
 
 import 'package:caregiver/algorithm/data_firebase.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class Calculate extends ChangeNotifier {
-  double homeLat = 0.0;
-  double homeLon = 0.0;
-  double patientLat = 0.0;
-  double patientLon = 0.0;
-  double radius = 0.0;
-  double distanceRadius = 0.0;
+  List<double> distancesPatient = [];
+  DataFirebase dataPositions = DataFirebase();
+  DataFirebase dataLocation = DataFirebase();
 
-  var getData = DataFirebase();
-
-  Future<void> distance() async {
-    await getData.patient();
-    patientLat = getData.patientLatitude;
-    patientLon = getData.patientLongitude;
-
-    await getData.home();
-    homeLat = getData.homeLatitude;
-    homeLon = getData.homeLongitude;
-    radius = getData.radius;
-
-    // การคำนวณด้วย กฎของเฮเวอร์ซีน (Haversine formula)
-    // คำนวณระยะทางระหว่างจุดสองจุดโดยใช้สูตร Haversine
-
+  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const earthRadius = 6370000; // รัศมีโลกมีค่าประมาณ 6.37*10^6
     const p = pi / 180; // แปลงค่าคงที่ให้เป็นองศาเรเดียน
 
-    var disLat = (homeLat - patientLat) * p;
-    var disLon = (homeLon - patientLon) * p;
+    var disLat = (lat1 - lat2) * p;
+    var disLon = (lon1 - lon2) * p;
 
     var a = (sin(disLat / 2) * sin(disLat / 2)) +
-        cos(homeLat * p) *
-            cos(patientLat * p) *
-            (sin(disLon / 2) * sin(disLon / 2));
+        cos(lat1 * p) * cos(lat2 * p) * (sin(disLon / 2) * sin(disLon / 2));
     var c = 2 * asin(sqrt(a));
-    distanceRadius = earthRadius * c;
+    var distance = earthRadius * c;
+
+    return distance;
+  }
+
+  Future<void> distance() async {
+    distancesPatient.clear();
+
+    await dataLocation.locationCollection();
+    LatLng patient = dataLocation.patientData;
+    LatLng home = dataLocation.homeData;
+
+    double dis = calculateDistance(
+        home.latitude, home.longitude, patient.latitude, patient.longitude);
+
+    distancesPatient.add(dis);
+
+    await dataPositions.positionCollection();
+
+    List<Map<String, dynamic>> positions = dataPositions.position;
+
+    for (var pos in positions) {
+      double posLat = pos['latitude'];
+      double posLon = pos['longitude'];
+
+      double disPosition = calculateDistance(
+          posLat, posLon, patient.latitude, patient.longitude);
+
+      distancesPatient.add(disPosition);
+    }
 
     notifyListeners();
   }
