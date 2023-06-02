@@ -36,6 +36,7 @@ flutter build apk #วิธีสร้างไฟล์ Android App Bundle
 
 ## ขั้นตอนการแสดงผลผ่าน Emulator
 เปิดใช้งานโปรแกรมจำลอง `Android Emulator`
+
 **Caregiver side**
 ```bash
 cd caregiver
