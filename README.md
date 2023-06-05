@@ -13,7 +13,7 @@
 
 **Caregiver side**
 ```bash
-git clond https://github.com/CodeJobToey/caregiver.git 
+git clone https://github.com/CodeJobToey/caregiver.git 
 
 cd caregiver
 
@@ -21,7 +21,7 @@ flutter pub get #Adding a package dependency to an app
 ```
 **Patient side**
 ```bash
-git clond https://github.com/CodeJobToey/patient.git
+git clone https://github.com/CodeJobToey/patient.git
 
 cd patient
 
